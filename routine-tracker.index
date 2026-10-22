@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>데일리 루틴 체크</title>
+<style>
+:root{
+  --bg:#eef1f4; --card:#ffffff; --ink:#1c2430; --sub:#64707f; --line:#dde2e8;
+  --box:#d9433f; --duo:#4f9d0b; --hang:#2f6fde; --sel:#1c2430; --empty:#e3e7ec;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141a22; --card:#1d252f; --ink:#e8edf2; --sub:#93a0af; --line:#2c3643;
+    --box:#ee6b66; --duo:#79c13a; --hang:#6b9bf2; --sel:#e8edf2; --empty:#2c3643; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  line-height:1.5;padding:20px 14px 48px}
+main{max-width:720px;margin:0 auto;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-size:22px;margin:0;letter-spacing:-.02em}
+h2{font-size:15px;margin:0 0 10px}
+.nav{display:flex;align-items:center;gap:6px}
+.nav b{min-width:104px;text-align:center;font-size:16px}
+button{font:inherit;color:inherit;cursor:pointer}
+.ic{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card)}
+.ic:hover{background:var(--bg)}
+:focus-visible{outline:2px solid var(--hang);outline-offset:2px}
+
+/* entry */
+.entryHead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.entryHead strong{font-size:17px}
+.badge{font-size:12px;color:var(--sub)}
+.rows{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:center}
+.row label{font-weight:600;display:flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+input[type=number]{width:84px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+.unit{color:var(--sub);margin-right:4px}
+.q{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px}
+.q:hover{background:var(--bg)}
+.toggle{padding:9px 16px;border-radius:10px;border:1.5px solid var(--hang);background:transparent;color:var(--hang);font-weight:600}
+.toggle[aria-pressed=true]{background:var(--hang);color:#fff}
+
+/* summary */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:10px;padding:10px}
+.stat span{display:block;font-size:12px;color:var(--sub)}
+.stat b{font-size:20px;letter-spacing:-.02em}
+.stat small{font-size:12px;color:var(--sub);font-weight:400}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wd{text-align:center;font-size:12px;color:var(--sub);padding-bottom:2px}
+.day{aspect-ratio:1/0.92;border:1px solid transparent;border-radius:10px;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px}
+.day:hover{border-color:var(--line)}
+.day.today{font-weight:700}
+.day.today::after{content:"";width:14px;height:2px;background:var(--ink);border-radius:2px;margin-top:-2px}
+.day.sel{border-color:var(--sel);background:var(--card)}
+.dots{display:flex;gap:3px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--empty)}
+.dots i.b.on{background:var(--box)} .dots i.d.on{background:var(--duo)} .dots i.h.on{background:var(--hang)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--sub);margin-top:10px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:5px}
+
+/* charts */
+.chartHead{display:flex;justify-content:space-between;align-items:baseline}
+.chartHead span{font-size:13px;color:var(--sub)}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--sub);font-size:10px}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg rect.bar{cursor:pointer}
+svg rect.hit{fill:transparent;cursor:pointer}
+.charts{display:grid;gap:16px}
+.foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.foot .q{font-size:12px}
+@media (max-width:480px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>데일리 루틴 체크</h1>
+    <div class="nav">
+      <button class="ic" id="prev" aria-label="이전 달">‹</button>
+      <b id="monthLabel"></b>
+      <button class="ic" id="next" aria-label="다음 달">›</button>
+    </div>
+  </header>
+
+  <section class="card" aria-label="기록하기">
+    <div class="entryHead"><strong id="selLabel"></strong><span class="badge" id="selBadge"></span></div>
+    <div class="rows">
+      <div class="row">
+        <label for="box"><i class="dot" style="background:var(--box)"></i>복싱</label>
+        <div class="ctl">
+          <input type="number" id="box" min="0" max="600" inputmode="numeric"><span class="unit">분</span>
+          <button class="q" data-k="box" data-add="10">+10</button>
+          <button class="q" data-k="box" data-add="30">+30</button>
+          <button class="q" data-k="box" data-add="-10">−10</button>
+        </div>
+      </div>
+      <div class="row">
+        <label for="duo"><i class="dot" style="background:var(--duo)"></i>듀오링고</label>
+        <div class="ctl">
+          <input type="number" id="duo" min="0" max="600" inputmode="numeric"><span class="unit">분</span>
+          <button class="q" data-k="duo" data-add="5">+5</button>
+          <button class="q" data-k="duo" data-add="10">+10</button>
+          <button class="q" data-k="duo" data-add="-5">−5</button>
+        </div>
+      </div>
+      <div class="row">
+        <label><i class="dot" style="background:var(--hang)"></i>매달리기</label>
+        <div class="ctl"><button class="toggle" id="hang" aria-pressed="false">했어요</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card stats" id="stats" aria-label="월간 요약"></section>
+
+  <section class="card" aria-label="달력">
+    <h2>달력</h2>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--box)"></i>복싱</span>
+      <span><i class="dot" style="background:var(--duo)"></i>듀오링고</span>
+      <span><i class="dot" style="background:var(--hang)"></i>매달리기</span>
+    </div>
+  </section>
+
+  <section class="card charts" aria-label="그래프">
+    <div><div class="chartHead"><h2>복싱 (분)</h2><span id="t-box"></span></div><div id="c-box"></div></div>
+    <div><div class="chartHead"><h2>듀오링고 (분)</h2><span id="t-duo"></span></div><div id="c-duo"></div></div>
+    <div><div class="chartHead"><h2>매달리기</h2><span id="t-hang"></span></div><div id="c-hang"></div></div>
+  </section>
+
+  <div class="foot">
+    <button class="q" id="export">데이터 내보내기</button>
+    <button class="q" id="import">데이터 불러오기</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const STORE = 'routine-tracker-v1';
+const WD = ['일','월','화','수','목','금','토'];
+const pad = n => String(n).padStart(2,'0');
+const keyOf = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+function load(){ try{ return JSON.parse(localStorage.getItem(STORE)) || {}; }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem(STORE, JSON.stringify(data)); }catch(e){} }
+
+let data = load();
+const now = new Date();
+const todayKey = keyOf(now.getFullYear(), now.getMonth(), now.getDate());
+let vy = now.getFullYear(), vm = now.getMonth(), sel = todayKey;
+
+const get = k => Object.assign({box:0,duo:0,hang:false}, data[k] || {});
+function setDay(k, patch){ data[k] = Object.assign(get(k), patch); save(); renderRest(); }
+const daysIn = () => new Date(vy, vm+1, 0).getDate();
+
+/* ---------- 입력 영역 ---------- */
+function renderEntry(){
+  const [y,m,d] = sel.split('-').map(Number);
+  const w = WD[new Date(y,m-1,d).getDay()];
+  $('#selLabel').textContent = `${y}년 ${m}월 ${d}일 (${w})`;
+  $('#selBadge').textContent = sel === todayKey ? '오늘' : '';
+  const r = get(sel);
+  $('#box').value = r.box || '';
+  $('#duo').value = r.duo || '';
+  $('#hang').setAttribute('aria-pressed', r.hang);
+  $('#hang').textContent = r.hang ? '했어요 ✓' : '했어요';
+}
+const clampMin = v => Math.max(0, Math.min(600, Math.round(Number(v) || 0)));
+
+['box','duo'].forEach(k => {
+  $('#'+k).addEventListener('input', e => setDay(sel, {[k]: clampMin(e.target.value)}));
+});
+$('#hang').addEventListener('click', () => { setDay(sel, {hang: !get(sel).hang}); renderEntry(); });
+document.querySelectorAll('.q[data-k]').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.k;
+  setDay(sel, {[k]: clampMin(get(sel)[k] + Number(b.dataset.add))});
+  renderEntry();
+}));
+
+/* ---------- 요약 / 달력 / 그래프 ---------- */
+function renderStats(){
+  let box=0, duo=0, hang=0, all=0;
+  for(let d=1; d<=daysIn(); d++){
+    const r = get(keyOf(vy,vm,d));
+    box += r.box; duo += r.duo; if(r.hang) hang++;
+    if(r.box>0 && r.duo>0 && r.hang) all++;
+  }
+  $('#stats').innerHTML = `
+    <div class="stat"><span>복싱 합계</span><b>${box}<small> 분</small></b></div>
+    <div class="stat"><span>듀오링고 합계</span><b>${duo}<small> 분</small></b></div>
+    <div class="stat"><span>매달리기</span><b>${hang}<small> 일</small></b></div>
+    <div class="stat"><span>3가지 모두 한 날</span><b>${all}<small> 일</small></b></div>`;
+  $('#t-box').textContent = `합계 ${box}분`;
+  $('#t-duo').textContent = `합계 ${duo}분`;
+  $('#t-hang').textContent = `${hang}일 / ${daysIn()}일`;
+}
+
+function renderCal(){
+  const first = new Date(vy, vm, 1).getDay();
+  let h = WD.map(w => `<div class="wd">${w}</div>`).join('');
+  h += '<div></div>'.repeat(first);
+  for(let d=1; d<=daysIn(); d++){
+    const k = keyOf(vy,vm,d), r = get(k);
+    const cls = ['day', k===todayKey?'today':'', k===sel?'sel':''].join(' ');
+    h += `<button class="${cls}" data-k="${k}" aria-label="${vm+1}월 ${d}일">${d}
+      <span class="dots"><i class="b ${r.box>0?'on':''}"></i><i class="d ${r.duo>0?'on':''}"></i><i class="h ${r.hang?'on':''}"></i></span></button>`;
+  }
+  $('#cal').innerHTML = h;
+  document.querySelectorAll('.day').forEach(b => b.addEventListener('click', () => {
+    sel = b.dataset.k; renderEntry(); renderCal(); renderCharts();
+  }));
+}
+
+function chart(id, field, color, unit){
+  const n = daysIn(), W=640, H=170, L=34, R=6, T=10, B=22;
+  const vals = []; for(let d=1; d<=n; d++){ const v = get(keyOf(vy,vm,d))[field]; vals.push(field==='hang' ? (v?1:0) : v); }
+  const isHang = field==='hang';
+  const max = isHang ? 1 : Math.max(30, Math.ceil(Math.max(...vals)/30)*30);
+  const bw = (W-L-R)/n, ph = H-T-B;
+  const y = v => T + ph - (v/max)*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${field} 월간 그래프">`;
+  const ticks = isHang ? [0,1] : [0, max/2, max];
+  ticks.forEach(t => {
+    s += `<line class="grid" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/>`;
+    if(!isHang) s += `<text x="${L-6}" y="${y(t)+3}" text-anchor="end">${t}</text>`;
+  });
+  if(isHang){ s += `<text x="${L-6}" y="${y(1)+3}" text-anchor="end">했음</text>`; }
+  vals.forEach((v,i) => {
+    const d = i+1, k = keyOf(vy,vm,d), x = L + i*bw, isSel = k===sel;
+    const h = (v/max)*ph;
+    if(isSel) s += `<rect x="${x}" y="${T}" width="${bw}" height="${ph}" fill="${color}" opacity=".1" rx="3"/>`;
+    if(v>0) s += `<rect class="bar" x="${x+bw*.19}" y="${y(v)}" width="${bw*.62}" height="${h}" rx="2" fill="${color}"><title>${vm+1}월 ${d}일: ${isHang?'했음':v+unit}</title></rect>`;
+    s += `<rect class="hit" data-k="${k}" x="${x}" y="${T}" width="${bw}" height="${ph}"/>`;
+    if(d===1 || d%5===0) s += `<text x="${x+bw/2}" y="${H-7}" text-anchor="middle">${d}</text>`;
+  });
+  s += '</svg>';
+  $('#c-'+field).innerHTML = s;
+}
+function renderCharts(){
+  chart('box','box','var(--box)','분');
+  chart('duo','duo','var(--duo)','분');
+  chart('hang','hang','var(--hang)','');
+  document.querySelectorAll('rect.hit').forEach(r => r.addEventListener('click', () => {
+    sel = r.dataset.k; renderEntry(); renderCal(); renderCharts();
+  }));
+}
+function renderRest(){ renderStats(); renderCal(); renderCharts(); }
+
+/* ---------- 월 이동 ---------- */
+function renderMonth(){ $('#monthLabel').textContent = `${vy}년 ${vm+1}월`; }
+function shift(delta){
+  vm += delta;
+  if(vm<0){ vm=11; vy--; } else if(vm>11){ vm=0; vy++; }
+  sel = (vy===now.getFullYear() && vm===now.getMonth()) ? todayKey : keyOf(vy,vm,1);
+  renderMonth(); renderEntry(); renderRest();
+}
+$('#prev').addEventListener('click', () => shift(-1));
+$('#next').addEventListener('click', () => shift(1));
+
+/* ---------- 백업 ---------- */
+$('#export').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)], {type:'application/json'}));
+  a.download = 'routine-backup.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+$('#import').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  f.text().then(t => {
+    try{ const o = JSON.parse(t); if(o && typeof o==='object'){ data = Object.assign(data, o); save(); renderEntry(); renderRest(); } }
+    catch(err){ alert('파일을 읽을 수 없어요. 내보내기로 만든 JSON 파일인지 확인해 주세요.'); }
+  });
+  e.target.value = '';
+});
+
+renderMonth(); renderEntry(); renderRest();
+</script>
+</body>
+</html>
